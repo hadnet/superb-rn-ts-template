@@ -1,0 +1,8 @@
+{
+  "name": "superb-rn-ts-template",
+  "version": "0.0.1",
+  "description": "React Native Template",
+  "repository": "git@github.com:hadnet/superb-rn-ts-template.git",
+  "author": "hadnet",
+  "license": "MIT"
+}
