@@ -10,6 +10,11 @@
 
 import React, {useEffect} from 'react';
 import {
+  Alert,
+  Linking,
+  PermissionsAndroid,
+  Platform,
+  ToastAndroid,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -19,6 +24,10 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+
+import appConfig from './app.json';
+
+import Geolocation from 'react-native-geolocation-service';
 
 import {
   Colors,
@@ -55,7 +64,8 @@ const Section: React.FC<{
           {
             color: isDarkMode ? Colors.white : Colors.black,
           },
-        ]}>
+        ]}
+      >
         {icon}
         {title}
       </Text>
@@ -65,7 +75,8 @@ const Section: React.FC<{
           {
             color: isDarkMode ? Colors.light : Colors.dark,
           },
-        ]}>
+        ]}
+      >
         {children}
       </Text>
       <Icon name="ios-arrow-forward" size={24} color={color} />
@@ -89,8 +100,95 @@ const App = () => {
     };
   });
 
+  const hasPermissionIOS = async () => {
+    const openSetting = () => {
+      Linking.openSettings().catch(() => {
+        Alert.alert('Unable to open settings');
+      });
+    };
+    const status = await Geolocation.requestAuthorization('whenInUse');
+
+    if (status === 'granted') {
+      return true;
+    }
+
+    if (status === 'denied') {
+      Alert.alert('Location permission denied');
+    }
+
+    if (status === 'disabled') {
+      Alert.alert(
+        `Turn on Location Services to allow "${appConfig.displayName}" to determine your location.`,
+        '',
+        [
+          {text: 'Go to Settings', onPress: openSetting},
+          {text: "Don't Use Location", onPress: () => {}},
+        ],
+      );
+    }
+
+    return false;
+  };
+
+  const hasLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      const hasPermission = await hasPermissionIOS();
+      return hasPermission;
+    }
+
+    if (Platform.OS === 'android' && Platform.Version < 23) {
+      return true;
+    }
+
+    const hasPermission = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+
+    if (hasPermission) {
+      return true;
+    }
+
+    const status = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+
+    if (status === PermissionsAndroid.RESULTS.GRANTED) {
+      return true;
+    }
+
+    if (status === PermissionsAndroid.RESULTS.DENIED) {
+      ToastAndroid.show(
+        'Location permission denied by user.',
+        ToastAndroid.LONG,
+      );
+    } else if (status === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      ToastAndroid.show(
+        'Location permission revoked by user.',
+        ToastAndroid.LONG,
+      );
+    }
+
+    return false;
+  };
+
   useEffect(() => {
     width.value = winWidth;
+
+    (async () => {
+      const hasPermission = await hasLocationPermission();
+      if (hasPermission) {
+        Geolocation.getCurrentPosition(
+          position => {
+            console.log(position);
+          },
+          error => {
+            // See error code charts below.
+            console.log(error.code, error.message);
+          },
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+        );
+      }
+    })();
   }, []);
 
   return (
@@ -99,32 +197,35 @@ const App = () => {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
-          style={backgroundStyle}>
+          style={backgroundStyle}
+        >
           <Header />
           <Animated.View style={[styles.box, animatedStyle]} />
           <View
             style={{
               backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            }}>
+            }}
+          >
             <Section title="Step One" icon={<Edit size="32" color={color} />}>
               Edit <Text style={styles.highlight}>App.tsx</Text> to change this
               screen and then come back to see your edits.
             </Section>
             <Section
               title="See Your Changes"
-              icon={<UserEdit size="32" color={color} />}>
+              icon={<UserEdit size="32" color={color} />}
+            >
               <ReloadInstructions />
             </Section>
             <Section
               title="Debug"
-              icon={
-                <ChemicalGlass size="32" color={color} variant="Outline" />
-              }>
+              icon={<ChemicalGlass size="32" color={color} variant="Outline" />}
+            >
               <DebugInstructions />
             </Section>
             <Section
               title="Learn More"
-              icon={<Book1 size="32" color={color} variant="Outline" />}>
+              icon={<Book1 size="32" color={color} variant="Outline" />}
+            >
               Read the docs to discover what to do next:
             </Section>
             <LearnMoreLinks />
