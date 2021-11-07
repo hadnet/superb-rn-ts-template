@@ -49,6 +49,8 @@ import {Book1, ChemicalGlass, Edit, UserEdit} from 'iconsax-react-native';
 
 import {NavigationContainer} from '@react-navigation/native';
 
+// import {Example} from '@/components/Example';
+
 const color = '#FF8A65';
 
 const Section: React.FC<{
