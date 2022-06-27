@@ -92,7 +92,7 @@
   },
   "config": {
     "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
+      "path": "./template/node_modules/cz-conventional-changelog"
     }
   }
 }
